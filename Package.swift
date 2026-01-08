@@ -1,9 +1,6 @@
 // swift-tools-version:5.3
 import PackageDescription
 
-// This Package.swift is automatically updated by the sync-releases workflow.
-// Run the workflow to sync the latest release from ironsource-mobile/iOS-adqualitysdk.
-
 let package = Package(
     name: "IronSourceAdQualitySDK",
     platforms: [
@@ -16,11 +13,10 @@ let package = Package(
         )
     ],
     targets: [
-        // Binary target will be configured after first sync
         .binaryTarget(
             name: "IronSourceAdQualitySDK",
-            url: "https://github.com/OWNER/REPO/releases/download/VERSION/IronSourceAdQualitySDK.xcframework.zip",
-            checksum: "CHECKSUM_PLACEHOLDER"
+            url: "https://github.com/portolans/ironsource-releases/releases/download/9.2.1/IronSourceAdQualitySDK.xcframework.zip",
+            checksum: "cca9cdcba92c78e2ea5da588efc3aa95ad230e465903194dc4c69b0240ab945a"
         )
     ]
 )
