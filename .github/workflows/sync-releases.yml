@@ -72,84 +72,84 @@ jobs:
           echo "CHECKSUM=$CHECKSUM" >> $GITHUB_ENV
           echo "Checksum: $CHECKSUM"
 
-      # - name: Update Package.swift
-      #   if: steps.check.outputs.needs_update == 'true'
-      #   run: |
-      #     VERSION="${{ steps.upstream.outputs.version }}"
-      #     CHECKSUM="${{ env.CHECKSUM }}"
-      #     REPO="${{ github.repository }}"
+      - name: Update Package.swift
+        if: steps.check.outputs.needs_update == 'true'
+        run: |
+          VERSION="${{ steps.upstream.outputs.version }}"
+          CHECKSUM="${{ env.CHECKSUM }}"
+          REPO="${{ github.repository }}"
 
-      #     cat > Package.swift << EOF
-      #     // swift-tools-version:5.3
-      #     import PackageDescription
+          cat > Package.swift << EOF
+          // swift-tools-version:5.3
+          import PackageDescription
 
-      #     let package = Package(
-      #         name: "IronSourceAdQualitySDK",
-      #         platforms: [
-      #             .iOS(.v12)
-      #         ],
-      #         products: [
-      #             .library(
-      #                 name: "IronSourceAdQualitySDK",
-      #                 targets: ["IronSourceAdQualitySDK"]
-      #             )
-      #         ],
-      #         targets: [
-      #             .binaryTarget(
-      #                 name: "IronSourceAdQualitySDK",
-      #                 url: "https://github.com/${REPO}/releases/download/${VERSION}/IronSourceAdQualitySDK.xcframework.zip",
-      #                 checksum: "${CHECKSUM}"
-      #             )
-      #         ]
-      #     )
-      #     EOF
+          let package = Package(
+              name: "IronSourceAdQualitySDK",
+              platforms: [
+                  .iOS(.v12)
+              ],
+              products: [
+                  .library(
+                      name: "IronSourceAdQualitySDK",
+                      targets: ["IronSourceAdQualitySDK"]
+                  )
+              ],
+              targets: [
+                  .binaryTarget(
+                      name: "IronSourceAdQualitySDK",
+                      url: "https://github.com/${REPO}/releases/download/${VERSION}/IronSourceAdQualitySDK.xcframework.zip",
+                      checksum: "${CHECKSUM}"
+                  )
+              ]
+          )
+          EOF
 
-      #     cat Package.swift
+          cat Package.swift
 
-      # - name: Commit Package.swift
-      #   if: steps.check.outputs.needs_update == 'true'
-      #   run: |
-      #     git config user.name "github-actions[bot]"
-      #     git config user.email "github-actions[bot]@users.noreply.github.com"
-      #     git add Package.swift
-      #     git commit -m "Update to ${{ steps.upstream.outputs.version }}" || echo "No changes to commit"
-      #     git push
+      - name: Commit Package.swift
+        if: steps.check.outputs.needs_update == 'true'
+        run: |
+          git config user.name 'Portolabot'
+          git config user.email portolabot@hiportola.com
+          git add Package.swift
+          git commit -m "Update to ${{ steps.upstream.outputs.version }}" || echo "No changes to commit"
+          git push
 
-      # - name: Create tag
-      #   if: steps.check.outputs.needs_update == 'true'
-      #   run: |
-      #     VERSION="${{ steps.upstream.outputs.version }}"
-      #     git tag $VERSION
-      #     git push origin "refs/tags/$VERSION"
+      - name: Create tag
+        if: steps.check.outputs.needs_update == 'true'
+        run: |
+          VERSION="${{ steps.upstream.outputs.version }}"
+          git tag $VERSION
+          git push origin "refs/tags/$VERSION"
 
-      # - name: Upload release asset
-      #   if: steps.check.outputs.needs_update == 'true'
-      #   uses: svenstaro/upload-release-action@v2
-      #   with:
-      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
-      #     file: IronSourceAdQualitySDK.xcframework.zip
-      #     tag: ${{ steps.upstream.outputs.version }}
-      #     asset_name: IronSourceAdQualitySDK.xcframework.zip
-      #     overwrite: false
+      - name: Upload release asset
+        if: steps.check.outputs.needs_update == 'true'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: IronSourceAdQualitySDK.xcframework.zip
+          tag: ${{ steps.upstream.outputs.version }}
+          asset_name: IronSourceAdQualitySDK.xcframework.zip
+          overwrite: false
 
-      # - name: Update release notes
-      #   if: steps.check.outputs.needs_update == 'true'
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: |
-      #     VERSION="${{ steps.upstream.outputs.version }}"
+      - name: Update release notes
+        if: steps.check.outputs.needs_update == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.upstream.outputs.version }}"
 
-      #     cat <<EOF > release_notes.txt
-      #     Synced from [ironsource-mobile/iOS-adqualitysdk $VERSION](https://github.com/ironsource-mobile/iOS-adqualitysdk/releases/tag/$VERSION)
+          cat <<EOF > release_notes.txt
+          Synced from [ironsource-mobile/iOS-adqualitysdk $VERSION](https://github.com/ironsource-mobile/iOS-adqualitysdk/releases/tag/$VERSION)
 
-      #     Include this framework in your Package.swift file by adding the following to your \`targets\` array:
-      #     \`\`\`swift
-      #     .binaryTarget(
-      #         name: "IronSourceAdQualitySDK",
-      #         url: "https://github.com/${{ github.repository }}/releases/download/$VERSION/IronSourceAdQualitySDK.xcframework.zip",
-      #         checksum: "${{ env.CHECKSUM }}"
-      #     )
-      #     \`\`\`
-      #     EOF
+          Include this framework in your Package.swift file by adding the following to your \`targets\` array:
+          \`\`\`swift
+          .binaryTarget(
+              name: "IronSourceAdQualitySDK",
+              url: "https://github.com/${{ github.repository }}/releases/download/$VERSION/IronSourceAdQualitySDK.xcframework.zip",
+              checksum: "${{ env.CHECKSUM }}"
+          )
+          \`\`\`
+          EOF
 
-      #     gh release edit $VERSION --notes-file release_notes.txt
+          gh release edit $VERSION --notes-file release_notes.txt
