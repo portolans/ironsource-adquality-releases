@@ -2,6 +2,11 @@ name: Sync AdQuality SDK Releases
 
 on:
   workflow_dispatch:
+    inputs:
+      patch:
+        description: 'Patch number for republishing (e.g., 1 creates -patch.1 suffix)'
+        required: false
+        type: number
   schedule:
     - cron: '0 6 * * *'  # Daily at 6 AM UTC
 
@@ -43,15 +48,37 @@ jobs:
           echo "version=$LOCAL_VERSION" >> $GITHUB_OUTPUT
           echo "Local version: $LOCAL_VERSION"
 
+      - name: Compute release version
+        id: release
+        run: |
+          UPSTREAM_VERSION="${{ steps.upstream.outputs.version }}"
+          PATCH="${{ inputs.patch }}"
+
+          if [ -n "$PATCH" ]; then
+            RELEASE_VERSION="${UPSTREAM_VERSION}-patch.${PATCH}"
+          else
+            RELEASE_VERSION="$UPSTREAM_VERSION"
+          fi
+
+          echo "version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $RELEASE_VERSION"
+
       - name: Check if update needed
         id: check
         run: |
-          if [ "${{ steps.upstream.outputs.version }}" != "${{ steps.local.outputs.version }}" ]; then
+          RELEASE_VERSION="${{ steps.release.outputs.version }}"
+          LOCAL_VERSION="${{ steps.local.outputs.version }}"
+          PATCH="${{ inputs.patch }}"
+
+          if [ -n "$PATCH" ]; then
             echo "needs_update=true" >> $GITHUB_OUTPUT
-            echo "Update needed: ${{ steps.local.outputs.version }} -> ${{ steps.upstream.outputs.version }}"
+            echo "Force republish with patch: $RELEASE_VERSION"
+          elif [ "$RELEASE_VERSION" != "$LOCAL_VERSION" ]; then
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+            echo "Update needed: $LOCAL_VERSION -> $RELEASE_VERSION"
           else
             echo "needs_update=false" >> $GITHUB_OUTPUT
-            echo "Already up to date: ${{ steps.upstream.outputs.version }}"
+            echo "Already up to date: $RELEASE_VERSION"
           fi
 
       - name: Download and extract upstream release
@@ -91,7 +118,7 @@ jobs:
       - name: Update Package.swift
         if: steps.check.outputs.needs_update == 'true'
         run: |
-          VERSION="${{ steps.upstream.outputs.version }}"
+          VERSION="${{ steps.release.outputs.version }}"
           CHECKSUM="${{ env.CHECKSUM }}"
           REPO="${{ github.repository }}"
 
@@ -128,13 +155,13 @@ jobs:
           git config user.name 'Portolabot'
           git config user.email portolabot@hiportola.com
           git add Package.swift
-          git commit -m "Update to ${{ steps.upstream.outputs.version }}" || echo "No changes to commit"
+          git commit -m "Update to ${{ steps.release.outputs.version }}" || echo "No changes to commit"
           git push
 
       - name: Create tag
         if: steps.check.outputs.needs_update == 'true'
         run: |
-          VERSION="${{ steps.upstream.outputs.version }}"
+          VERSION="${{ steps.release.outputs.version }}"
           git tag $VERSION
           git push origin "refs/tags/$VERSION"
 
@@ -144,7 +171,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: IronSourceAdQualitySDK.xcframework.zip
-          tag: ${{ steps.upstream.outputs.version }}
+          tag: ${{ steps.release.outputs.version }}
           asset_name: IronSourceAdQualitySDK.xcframework.zip
           overwrite: false
 
@@ -153,19 +180,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ steps.upstream.outputs.version }}"
+          UPSTREAM_VERSION="${{ steps.upstream.outputs.version }}"
+          RELEASE_VERSION="${{ steps.release.outputs.version }}"
 
           cat <<EOF > release_notes.txt
-          Synced from [ironsource-mobile/iOS-adqualitysdk $VERSION](https://github.com/ironsource-mobile/iOS-adqualitysdk/releases/tag/$VERSION)
+          Synced from [ironsource-mobile/iOS-adqualitysdk $UPSTREAM_VERSION](https://github.com/ironsource-mobile/iOS-adqualitysdk/releases/tag/$UPSTREAM_VERSION)
 
           Include this framework in your Package.swift file by adding the following to your \`targets\` array:
           \`\`\`swift
           .binaryTarget(
               name: "IronSourceAdQualitySDK",
-              url: "https://github.com/${{ github.repository }}/releases/download/$VERSION/IronSourceAdQualitySDK.xcframework.zip",
+              url: "https://github.com/${{ github.repository }}/releases/download/$RELEASE_VERSION/IronSourceAdQualitySDK.xcframework.zip",
               checksum: "${{ env.CHECKSUM }}"
           )
           \`\`\`
           EOF
 
-          gh release edit $VERSION --notes-file release_notes.txt
+          gh release edit $RELEASE_VERSION --notes-file release_notes.txt
