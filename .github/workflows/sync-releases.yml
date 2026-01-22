@@ -68,15 +68,17 @@ jobs:
           # Copy xcframework to working directory
           cp -R "$XCFRAMEWORK_PATH" ./IronSourceAdQualitySDK.xcframework
 
-          # Add module maps for Swift Package Manager compatibility
-          echo 'module IronSourceAdQualitySDK {
-              umbrella header "IronSourceAdQuality.h"
-              export *
-          }' > IronSourceAdQualitySDK.xcframework/ios-arm64/Headers/module.modulemap
-          echo 'module IronSourceAdQualitySDK {
-              umbrella header "IronSourceAdQuality.h"
-              export *
-          }' > IronSourceAdQualitySDK.xcframework/ios-arm64_x86_64-simulator/Headers/module.modulemap
+          # Move headers into IronSourceAdQualitySDK subdirectory and add module maps for Swift Package Manager compatibility
+          for arch in ios-arm64 ios-arm64_x86_64-simulator; do
+            HEADERS_DIR="IronSourceAdQualitySDK.xcframework/$arch/Headers"
+            SDK_DIR="$HEADERS_DIR/IronSourceAdQualitySDK"
+            mkdir -p "$SDK_DIR"
+            mv "$HEADERS_DIR"/*.h "$SDK_DIR/"
+            echo 'module IronSourceAdQualitySDK {
+                umbrella header "IronSourceAdQuality.h"
+                export *
+            }' > "$SDK_DIR/module.modulemap"
+          done
 
           # Create zip for release
           zip -r IronSourceAdQualitySDK.xcframework.zip IronSourceAdQualitySDK.xcframework
