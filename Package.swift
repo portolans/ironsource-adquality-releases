@@ -16,7 +16,7 @@ let package = Package(
         .binaryTarget(
             name: "IronSourceAdQualitySDK",
             url: "https://github.com/portolans/ironsource-adquality-releases/releases/download/9.2.1/IronSourceAdQualitySDK.xcframework.zip",
-            checksum: "b87388b58111012cd78eb9894d3984e1959729fb71a84e4cf94448163ad61ed9",
+            checksum: "739ca764b665ac9a3fe92936e49bac0981860fa69c1a808746c6854db67c6e01",
         ),
     ],
 )
